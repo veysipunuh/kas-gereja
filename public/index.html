@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daftar Donasi Kas</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <!-- Firebase SDK -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+</head>
+<body class="bg-gray-100 p-6">
+    <!-- Container -->
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Daftar Donasi Kas</h1>
+            <p class="text-gray-600 mt-2">Lihat daftar donasi dan riwayat transaksi</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex justify-center items-center space-x-4 mb-6">
+            <button id="donasiTab" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none">
+                Donasi Saat Ini
+            </button>
+            <button id="historyTab" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none">
+                Riwayat Donasi
+            </button>
+            <button id="rekapTab" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none">
+                Rekap Donasi
+            </button>
+        </div>
+
+        <!-- Donasi Section -->
+        <div id="donasi-section" class="bg-white rounded-lg shadow-lg p-6">
+            <div class="mb-6 text-center >
+                <h2 class="text-2xl font-semibold text-gray-800">Total Kas</h2>
+            <p id="total-kas" class="text-3xl font-bold text-green-500 mt-2">Rp. 0</p>
+            </div>
+
+            <div>
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Daftar Donasi</h3>
+                <ul id="donasi-list" class="space-y-3">
+                    <!-- Donasi items will be inserted here -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div id="history-section" class="bg-white rounded-lg shadow-lg p-6 hidden">
+            <div class="mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800">Riwayat Donasi</h2>
+                
+                <!-- Dropdown untuk memilih nama -->
+                <div class="mt-4">
+                    <select id="donor-select" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="" disabled selected>Pilih Nama Anggota</option>
+                    </select>
+                </div>
+            </div>
+
+            <ul id="history-list" class="space-y-3">
+                <!-- History items will be inserted here -->
+            </ul>
+        </div>
+
+        <!-- Rekap Section -->
+        <div id="rekap-section" class="bg-white rounded-lg shadow-lg p-6 hidden">
+            <div class="mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800 text-center">Rekap Donasi</h2>
+            </div>
+            
+            <div id="rekap-list" class="space-y-6">
+                <!-- Rekap items will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Konfigurasi Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCSZIsmoRcKOvdXAhlmvK3dXhodC2NENvI",
+    authDomain: "uang-kas-6cad4.firebaseapp.com",
+    databaseURL: "https://uang-kas-6cad4-default-rtdb.firebaseio.com",
+    projectId: "uang-kas-6cad4",
+    storageBucket: "uang-kas-6cad4.firebasestorage.app",
+    messagingSenderId: "726647128605",
+    appId: "1:726647128605:web:21587c50ad3e2da2603cf4",
+    measurementId: "G-F5ZBPFNQLX"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Fungsi untuk memuat data donasi saat ini
+        async function loadDonasiSaatIni() {
+            try {
+                const donasiRef = database.ref('donasi');
+                donasiRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    console.log(data);
+                    // Update total kas
+                    let totalKas = 0;
+                    const donasiList = document.getElementById('donasi-list');
+                    donasiList.innerHTML = '';
+
+                    if (data) {
+                        Object.entries(data).forEach(([key, donasi]) => {
+                            // Buat element untuk setiap donasi
+                            const donasiItem = document.createElement('li');
+                            donasiItem.className = 'flex justify-between items-center bg-gray-50 p-3 rounded-lg';
+                            donasiItem.innerHTML = `
+                                <span class="text-gray-700 font-medium">${donasi.nama}</span>
+                                <span class="text-green-500 font-semibold">Rp. ${donasi.donasi.toLocaleString()}</span>
+                            `;
+                            donasiList.appendChild(donasiItem);
+
+                            // Update total kas
+                            totalKas += donasi.donasi;
+                        });
+                    }
+
+                    // Tampilkan total kas
+                    document.getElementById('total-kas').textContent = `Rp. ${totalKas.toLocaleString()}`;
+                });
+            } catch (error) {
+                console.error('Gagal memuat data donasi:', error);
+            }
+        }
+
+        // Fungsi untuk memuat riwayat donasi
+        async function loadRiwayatDonasi() {
+            try {
+                const riwayatRef = database.ref('riwayat');
+                riwayatRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    const historyList = document.getElementById('history-list');
+                    historyList.innerHTML = '';
+
+                    if (data) {
+                        // Konversi object ke array dan urutkan berdasarkan waktu
+                        const riwayatArray = Object.entries(data).map(([key, value]) => ({
+                            ...value,
+                            key
+                        })).sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
+
+                        riwayatArray.forEach(donasi => {
+                            const isNegative = donasi.tipe === 'kurang';
+                            const donasiColorClass = isNegative ? 'text-red-500' : 'text-green-500';
+                            
+                            const historyItem = document.createElement('li');
+                            historyItem.className = 'flex flex-col bg-gray-50 p-4 rounded-lg shadow-sm';
+                            historyItem.innerHTML = `
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-700 font-medium">${donasi.nama}</span>
+                                    <span class="${donasiColorClass}">Rp. ${Math.abs(donasi.donasi).toLocaleString()}</span>
+                                </div>
+                                <span class="text-sm text-gray-500 mt-1">${donasi.tanggal}</span>
+                            `;
+                            historyList.appendChild(historyItem);
+                        });
+                    }
+                });
+            } catch (error) {
+                console.error('Gagal memuat riwayat donasi:', error);
+            }
+        }
+
+        // Fungsi untuk memuat nama anggota
+        async function loadNamaAnggota() {
+            try {
+                const donasiRef = database.ref('donasi');
+                donasiRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    const donorSelect = document.getElementById('donor-select');
+                    donorSelect.innerHTML = '<option value="" disabled selected>Pilih Nama Anggota</option>';
+
+                    if (data) {
+                        Object.values(data).forEach(donasi => {
+                            const option = document.createElement('option');
+                            option.value = donasi.nama;
+                            option.textContent = donasi.nama;
+                            donorSelect.appendChild(option);
+                        });
+                    }
+                });
+            } catch (error) {
+                console.error('Gagal memuat nama anggota:', error);
+            }
+        }
+
+        // Fungsi untuk menampilkan riwayat donasi berdasarkan nama
+        async function showDonorHistory() {
+            const selectedDonor = document.getElementById('donor-select').value;
+
+            if (!selectedDonor) {
+                alert('Pilih nama anggota terlebih dahulu.');
+                return;
+            }
+
+            try {
+                const riwayatRef = database.ref('riwayat');
+                riwayatRef.orderByChild('nama').equalTo(selectedDonor).on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    const historyList = document.getElementById('history-list');
+                    historyList.innerHTML = '';
+
+                    if (data) {
+                        Object.entries(data).forEach(([key, donasi]) => {
+                            const isNegative = donasi.tipe === 'kurang';
+                            const donasiColorClass = isNegative ? 'text-red-500' : 'text-green-500';
+                            
+                            const historyItem = document.createElement('li');
+                            historyItem.className = 'flex flex-col bg-gray-50 p-4 rounded-lg shadow-sm';
+                            historyItem.innerHTML = `
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-700 font-medium">${donasi.nama}</span>
+                                    <span class="${donasiColorClass}">Rp. ${Math.abs(donasi.donasi).toLocaleString()}</span>
+                                </div>
+                                <span class="text-sm text-gray-500 mt-1">${donasi.tanggal}</span>
+                            `;
+                            historyList.appendChild(historyItem);
+                        });
+                    }
+
+                    // Show history section and hide current donation section
+                    document.getElementById('donasi-section').classList.add('hidden');
+                    document.getElementById('history-section').classList.remove('hidden');
+                });
+            } catch (error) {
+                console.error('Gagal memuat riwayat donasi:', error);
+            }
+        }
+        async function loadRekap() {
+  try {
+    const rekapRef = database.ref('rekap');
+    rekapRef.orderByChild('timestamp').on('value', (snapshot) => {
+      const data = snapshot.val();
+      const rekapList = document.getElementById('rekap-list');
+      rekapList.innerHTML = '';
+      
+      if (data) {
+        Object.entries(data)
+          .sort(([, a], [, b]) => a.timestamp - b.timestamp)
+          .forEach(([key, rekap]) => {
+            const rekapItem = document.createElement('div');
+            rekapItem.className = 'bg-gray-50 p-4 rounded-lg';
+            rekapItem.innerHTML = `
+  <div class="bg-white p-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+    <div class="mb-4 border-b pb-4">
+      <h3 class="font-bold text-2xl text-gray-800">${rekap.keterangan}</h3>
+      <p class="text-sm text-gray-500 mt-1">Periode: <span class="font-medium">${rekap.tanggal_mulai}</span> s/d <span class="font-medium">${rekap.tanggal_akhir}</span></p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 text-center">
+      <div>
+        <p class="text-gray-600 text-sm">Total Masuk:</p>
+        <p class="text-green-500 text-xl font-semibold">Rp. ${rekap.total_masuk.toLocaleString()}</p>
+      </div>
+      <div>
+        <p class="text-gray-600 text-sm">Total Keluar:</p>
+        <p class="text-red-500 text-xl font-semibold">Rp. ${rekap.total_keluar.toLocaleString()}</p>
+      </div>
+      <div>
+        <p class="text-gray-600 text-sm">Saldo Akhir:</p>
+        <p class="text-blue-500 text-xl font-bold">Rp. ${rekap.total_kas.toLocaleString()}</p>
+      </div>
+    </div>
+
+    <!-- Detail Donasi per Anggota -->
+    <div class="mt-4">
+      <button onclick="toggleDetailDonasi(this)" 
+              class="text-blue-500 hover:text-blue-700 font-medium flex items-center gap-2">
+        <span class="transform transition-transform duration-200">▶</span>
+        Detail Donasi per Anggota
+      </button>
+      <div class="hidden mt-4 space-y-4 pl-4 border-l-4 border-blue-200">
+
+        ${Object.entries(rekap.detail_anggota || {})
+          .map(([nama, transaksiList]) => {
+            let totalDonasi = 0;
+
+            const transaksiDetails = transaksiList.map(transaksi => {
+              totalDonasi += transaksi.donasi;
+              return `
+                <div class="flex justify-between items-center py-1 border-b">
+                  <span class="text-gray-600">${transaksi.tanggal}</span>
+                  <span class="${transaksi.donasi >= 0 ? 'text-green-500' : 'text-red-500'} font-medium">
+                    Rp. ${Math.abs(transaksi.donasi).toLocaleString()}
+                  </span>
+                </div>
+              `;
+            }).join('');
+
+            return `
+              <div class="bg-gray-50 p-4 rounded-lg shadow-inner">
+                <h4 class="font-semibold text-lg text-gray-800">${nama}</h4>
+                ${transaksiDetails}
+                <div class="flex justify-between items-center mt-2 pt-2 border-t-2">
+                  <span class="font-medium text-gray-700">Total Donasi:</span>
+                  <span class="${totalDonasi >= 0 ? 'text-green-600' : 'text-red-600'} font-semibold">
+                    Rp. ${Math.abs(totalDonasi).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            `;
+          }).join('')}
+      </div>
+    </div>
+
+    <div class="mt-4 text-sm text-gray-500">
+      Dibuat pada: <span class="font-medium">${rekap.created_at}</span>
+    </div>
+
+    <div class="mt-4 text-right">
+      <button onclick="downloadRekap('${key}')" 
+              class="bg-blue-500 text-white px-5 py-2 rounded-lg hover:bg-blue-600 shadow-md transition duration-300">
+        Download Rekap PDF
+      </button>
+    </div>
+  </div>
+`;
+
+            rekapList.appendChild(rekapItem);
+          });
+      } else {
+        rekapList.innerHTML = `
+          <div class="text-center text-gray-500">
+            Belum ada data rekap
+          </div>
+        `;
+      }
+    });
+  } catch (error) {
+    console.error('Gagal memuat rekap:', error);
+    const rekapList = document.getElementById('rekap-list');
+    rekapList.innerHTML = `
+      <div class="text-center text-red-500">
+        Terjadi kesalahan saat memuat data rekap
+      </div>
+    `;
+  }
+}
+async function downloadRekap(rekapId) {
+  const { jsPDF } = window.jspdf;
+  const rekapRef = await database.ref('rekap/' + rekapId).once('value');
+  const rekap = rekapRef.val();
+
+  if (!rekap) {
+    alert('Rekap tidak ditemukan!');
+    return;
+  }
+
+  const doc = new jsPDF();
+
+  doc.setFontSize(18);
+  doc.text('Rekap Donasi', 20, 20);
+
+  doc.setFontSize(12);
+  doc.text(`Keterangan: ${rekap.keterangan}`, 20, 30);
+  doc.text(`Periode: ${rekap.tanggal_mulai} s/d ${rekap.tanggal_akhir}`, 20, 40);
+  doc.text(`Dibuat pada: ${rekap.created_at}`, 20, 50);
+
+  doc.setFontSize(14);
+  doc.text('Ringkasan:', 20, 65);
+  doc.setFontSize(12);
+  doc.text(`Total Masuk: Rp. ${rekap.total_masuk.toLocaleString()}`, 20, 75);
+  doc.text(`Total Keluar: Rp. ${rekap.total_keluar.toLocaleString()}`, 20, 85);
+  doc.text(`Saldo Akhir: Rp. ${rekap.total_kas.toLocaleString()}`, 20, 95);
+
+  let yPos = 110;
+  doc.setFontSize(14);
+  doc.text('Detail Donasi per Anggota:', 20, yPos);
+  doc.setFontSize(12);
+
+  Object.entries(rekap.detail_anggota || {}).forEach(([nama, transaksiList]) => {
+    yPos += 10;
+    doc.text(`- ${nama}:`, 25, yPos);
+
+    transaksiList.forEach(transaksi => {
+      yPos += 8;
+      const donasiFormatted = `Rp. ${Math.abs(transaksi.donasi).toLocaleString()}`;
+      const tipeDonasi = transaksi.tipe === 'tambah' ? 'Masuk' : 'Keluar';
+      doc.text(`  ${transaksi.tanggal} (${tipeDonasi}): ${donasiFormatted}`, 30, yPos);
+    });
+
+    yPos += 5;
+    if (yPos > 270) {  // Tambahkan halaman baru jika melebihi batas halaman
+      doc.addPage();
+      yPos = 20;
+    }
+  });
+
+  // Simpan PDF
+  doc.save(`Rekap_Donasi_${rekap.tanggal_mulai}_sd_${rekap.tanggal_akhir}.pdf`);
+}
+
+
+        // Fungsi untuk toggle detail donasi
+        function toggleDetailDonasi(button) {
+            const detailDiv = button.nextElementSibling;
+            const arrow = button.querySelector('span');
+            
+            if (detailDiv.classList.contains('hidden')) {
+                detailDiv.classList.remove('hidden');
+                arrow.style.transform = 'rotate(90deg)';
+            } else {
+                detailDiv.classList.add('hidden');
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Event listeners untuk tabs
+        document.getElementById('donasiTab').addEventListener('click', function() {
+            document.getElementById('donasi-section').classList.remove('hidden');
+            document.getElementById('history-section').classList.add('hidden');
+            document.getElementById('rekap-section').classList.add('hidden');
+            this.classList.remove('bg-gray-500');
+            this.classList.add('bg-blue-500');
+            document.getElementById('historyTab').classList.remove('bg-blue-500');
+            document.getElementById('historyTab').classList.add('bg-gray-500');
+            document.getElementById('rekapTab').classList.remove('bg-blue-500');
+            document.getElementById('rekapTab').classList.add('bg-gray-500');
+            loadDonasiSaatIni();
+        });
+
+        document.getElementById('historyTab').addEventListener('click', function() {
+            document.getElementById('history-section').classList.remove('hidden');
+            document.getElementById('donasi-section').classList.add('hidden');
+            document.getElementById('rekap-section').classList.add('hidden');
+            this.classList.remove('bg-gray-500');
+            this.classList.add('bg-blue-500');
+            document.getElementById('donasiTab').classList.remove('bg-blue-500');
+            document.getElementById('donasiTab').classList.add('bg-gray-500');
+            document.getElementById('rekapTab').classList.remove('bg-blue-500');
+            document.getElementById('rekapTab').classList.add('bg-gray-500');
+            loadRiwayatDonasi();
+        });
+
+        document.getElementById('rekapTab').addEventListener('click', function() {
+            document.getElementById('rekap-section').classList.remove('hidden');
+            document.getElementById('donasi-section').classList.add('hidden');
+            document.getElementById('history-section').classList.add('hidden');
+            this.classList.remove('bg-gray-500');
+            this.classList.add('bg-blue-500');
+            document.getElementById('donasiTab').classList.remove('bg-blue-500');
+            document.getElementById('donasiTab').classList.add('bg-gray-500');
+            document.getElementById('historyTab').classList.remove('bg-blue-500');
+            document.getElementById('historyTab').classList.add('bg-gray-500');
+            loadRekap();
+        });
+
+        // Load data saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', () => {
+            loadNamaAnggota();
+            loadDonasiSaatIni();
+        });
+
+        // Event listener untuk dropdown
+        document.getElementById('donor-select').addEventListener('change', showDonorHistory);
+    </script>
+</body>
+</html>

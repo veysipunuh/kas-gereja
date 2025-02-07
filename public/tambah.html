@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manajemen Donasi</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+</head>
+<body class="bg-gray-100 p-6">
+  <!-- Container -->
+  <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+
+    <!-- Tambah Nama Baru Card -->
+    <div class="bg-white shadow-xl hover:shadow-2xl rounded-2xl p-6 transition-transform transform hover:scale-105">
+      <div class="text-center">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Tambah Nama Baru</h2>
+        <p class="text-gray-500 mb-4">Masukkan nama baru untuk ditambahkan ke daftar donasi</p>
+      </div>
+      <form id="tambah-nama-form" class="space-y-4">
+        <div>
+          <label for="nama-baru" class="block text-gray-600 font-medium">Nama Baru</label>
+          <input type="text" id="nama-baru" placeholder="Masukkan nama baru" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+        </div>
+        <button type="button" onclick="tambahNamaBaru()" class="w-full bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600 transition duration-300">
+          Tambah Nama
+        </button>
+      </form>
+      <div id="notif-nama" class="hidden mt-4 text-center p-3 rounded-lg bg-purple-100 text-purple-700">
+        Nama berhasil ditambahkan!
+      </div>
+    </div>
+
+    <!-- Tambah Donasi Card -->
+    <div class="bg-white shadow-xl hover:shadow-2xl rounded-2xl p-6 transition-transform transform hover:scale-105">
+      <div class="text-center">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Tambah Donasi</h2>
+        <p class="text-gray-500 mb-4">Pilih nama, masukkan jumlah donasi, dan tanggal donasi</p>
+      </div>
+      <form id="donasi-form" class="space-y-4">
+        <div>
+          <label for="nama" class="block text-gray-600 font-medium">Nama</label>
+          <select id="nama" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            <option value="" disabled selected>Pilih nama</option>
+          </select>
+        </div>
+        <div>
+          <label for="donasi" class="block text-gray-600 font-medium">Jumlah Donasi</label>
+          <input type="number" id="donasi" placeholder="Masukkan jumlah donasi" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+        </div>
+        <div>
+          <label for="tanggal" class="block text-gray-600 font-medium">Tanggal Donasi</label>
+          <input type="date" id="tanggal" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+        </div>
+        <button type="button" onclick="tambahDonasi()" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-300">
+          Tambahkan Donasi
+        </button>
+      </form>
+      <div id="notif" class="hidden mt-4 text-center p-3 rounded-lg bg-green-100 text-green-700">
+        Donasi berhasil ditambahkan!
+      </div>
+    </div>
+
+    <!-- Kurangi Donasi Card -->
+    <div class="bg-white shadow-xl hover:shadow-2xl rounded-2xl p-6 transition-transform transform hover:scale-105">
+      <div class="text-center">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Kurangi Donasi</h2>
+        <p class="text-gray-500 mb-4">Pilih nama, masukkan jumlah donasi yang akan dikurangi, dan tanggal pengurangan</p>
+      </div>
+      <form id="kurangi-donasi-form" class="space-y-4">
+        <div>
+          <label for="nama-kurangi" class="block text-gray-600 font-medium">Nama</label>
+          <select id="nama-kurangi" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" required>
+            <option value="" disabled selected>Pilih nama</option>
+          </select>
+        </div>
+        <div>
+          <label for="donasi-kurangi" class="block text-gray-600 font-medium">Jumlah Pengurangan Donasi</label>
+          <input type="number" id="donasi-kurangi" placeholder="Masukkan jumlah donasi yang akan dikurangi" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" required>
+        </div>
+        <div>
+          <label for="tanggal-kurangi" class="block text-gray-600 font-medium">Tanggal Pengurangan</label>
+          <input type="date" id="tanggal-kurangi" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" required>
+        </div>
+        <button type="button" onclick="kurangiDonasi()" class="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition duration-300">
+          Kurangi Donasi
+        </button>
+      </form>
+      <div id="notif-kurangi" class="hidden mt-4 text-center p-3 rounded-lg bg-red-100 text-red-700">
+        Donasi berhasil dikurangi!
+      </div>
+    </div>
+<!-- Buat Rekap Card -->
+<div class="bg-white shadow-xl hover:shadow-2xl rounded-2xl p-6 transition-transform transform hover:scale-105">
+    <div class="text-center">
+      <h2 class="text-2xl font-bold text-gray-800 mb-2">Buat Rekap</h2>
+      <p class="text-gray-500 mb-4">Pilih rentang waktu untuk membuat rekap donasi</p>
+    </div>
+    <form id="rekap-form" class="space-y-4">
+      <div>
+        <label for="tanggal-mulai" class="block text-gray-600 font-medium">Tanggal Mulai</label>
+        <input type="date" id="tanggal-mulai" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required>
+      </div>
+      <div>
+        <label for="tanggal-akhir" class="block text-gray-600 font-medium">Tanggal Akhir</label>
+        <input type="date" id="tanggal-akhir" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required>
+      </div>
+      <div>
+        <label for="keterangan" class="block text-gray-600 font-medium">Keterangan Rekap</label>
+        <input type="text" id="keterangan" placeholder="Masukkan keterangan rekap" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required>
+      </div>
+      <button type="button" onclick="buatRekap()" class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition duration-300">
+        Buat Rekap
+      </button>
+    </form>
+    <div id="notif-rekap" class="hidden mt-4 text-center p-3 rounded-lg bg-green-100 text-green-700">
+      Rekap berhasil dibuat!
+    </div>
+  </div>
+  
+  </div>
+  <script>
+    // Konfigurasi Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCSZIsmoRcKOvdXAhlmvK3dXhodC2NENvI",
+      authDomain: "uang-kas-6cad4.firebaseapp.com",
+      databaseURL: "https://uang-kas-6cad4-default-rtdb.firebaseio.com",
+      projectId: "uang-kas-6cad4",
+      storageBucket: "uang-kas-6cad4.appspot.com",
+      messagingSenderId: "726647128605",
+      appId: "1:726647128605:web:21587c50ad3e2da2603cf4",
+      measurementId: "G-F5ZBPFNQLX"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    function convertToValidKey(nama) {
+      return nama.replace(/[\s.#$\\[\\]]/g, '_');
+    }
+
+    function loadNama() {
+      const namaRef = database.ref('donasi');
+      namaRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        const namaSelect = document.getElementById('nama');
+        const namaKurangiSelect = document.getElementById('nama-kurangi');
+        namaSelect.innerHTML = '<option value="" disabled selected>Pilih nama</option>';
+        namaKurangiSelect.innerHTML = '<option value="" disabled selected>Pilih nama</option>';
+
+        if (data) {
+          Object.values(data).forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.nama;
+            option.textContent = item.nama;
+            namaSelect.appendChild(option);
+
+            const optionKurangi = option.cloneNode(true);
+            namaKurangiSelect.appendChild(optionKurangi);
+          });
+        }
+      });
+    }
+
+    function tambahNamaBaru() {
+      const namaBaru = document.getElementById('nama-baru').value.trim();
+      if (!namaBaru) {
+        alert('Nama tidak boleh kosong!');
+        return;
+      }
+
+      const namaKey = convertToValidKey(namaBaru);
+      const donasiRef = database.ref('donasi/' + namaKey);
+
+      donasiRef.set({
+        nama: namaBaru,
+        donasi: 0,
+        tanggalDonasi: ''
+      }).then(() => {
+        document.getElementById('notif-nama').classList.remove('hidden');
+        document.getElementById('tambah-nama-form').reset();
+        loadNama();
+      }).catch(error => console.error('Gagal menambahkan nama:', error));
+    }
+// Fungsi untuk memformat angka dengan titik sebagai pemisah ribuan
+function formatAngka(value) {
+  // Menghapus semua karakter non-digit
+  const cleanedValue = value.replace(/\D/g, '');
+  
+  // Memformat angka dengan titik pemisah ribuan
+  return cleanedValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// Fungsi untuk menghapus titik pemisah sebelum diproses
+function removeFormat(angka) {
+  return angka.replace(/\./g, '');
+}
+
+// Event Listener untuk Input Jumlah Donasi
+document.getElementById('donasi').addEventListener('input', function(e) {
+  const originalLength = this.value.length;
+  const cursorPosition = this.selectionStart;
+
+  // Simpan nilai sebelum diformat
+  const unformattedValue = removeFormat(this.value);
+  
+  // Format angka dengan titik pemisah ribuan
+  this.value = formatAngka(unformattedValue);
+
+  // Perhitungan untuk menjaga posisi kursor tetap sesuai
+  const newLength = this.value.length;
+  this.setSelectionRange(cursorPosition + (newLength - originalLength), cursorPosition + (newLength - originalLength));
+});
+
+// Event Listener untuk Input Jumlah Pengurangan Donasi
+document.getElementById('donasi-kurangi').addEventListener('input', function(e) {
+  const originalLength = this.value.length;
+  const cursorPosition = this.selectionStart;
+
+  const unformattedValue = removeFormat(this.value);
+  
+  this.value = formatAngka(unformattedValue);
+
+  const newLength = this.value.length;
+  this.setSelectionRange(cursorPosition + (newLength - originalLength), cursorPosition + (newLength - originalLength));
+});
+
+  // Event Listener untuk Input Jumlah Pengurangan Donasi
+  document.getElementById('donasi-kurangi').addEventListener('input', function(e) {
+    const cursorPos = this.selectionStart;
+    const originalLength = this.value.length;
+    this.value = formatAngka(this.value);
+    const newLength = this.value.length;
+    this.selectionEnd = cursorPos + (newLength - originalLength);
+  });
+
+  // Fungsi Tambah Donasi dengan Parsing Angka
+  async function tambahDonasi() {
+    const nama = document.getElementById('nama').value;
+    const donasi = parseInt(removeFormat(document.getElementById('donasi').value.trim()));
+    const tanggal = document.getElementById('tanggal').value;
+
+    if (!nama || isNaN(donasi) || donasi <= 0 || !tanggal) {
+      alert('Harap masukkan data dengan benar!');
+      return;
+    }
+
+    const namaKey = convertToValidKey(nama);
+    const donasiRef = database.ref('donasi/' + namaKey);
+
+    const snapshot = await donasiRef.once('value');
+    const currentDonasi = snapshot.val()?.donasi || 0;
+
+    await donasiRef.update({
+      nama,
+      donasi: currentDonasi + donasi,
+      tanggalDonasi: tanggal
+    });
+
+    const riwayatRef = database.ref('riwayat').push();
+    await riwayatRef.set({
+      nama,
+      donasi,
+      tanggal,
+      waktu: new Date(tanggal).toLocaleString('id-ID', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      tipe: 'tambah',
+      timestamp: -new Date(tanggal).getTime()
+    });
+
+    document.getElementById('notif').classList.remove('hidden');
+    document.getElementById('donasi-form').reset();
+  }
+
+  // Fungsi Kurangi Donasi dengan Parsing Angka
+  async function kurangiDonasi() {
+    const nama = document.getElementById('nama-kurangi').value;
+    const donasi = parseInt(removeFormat(document.getElementById('donasi-kurangi').value.trim()));
+    const tanggal = document.getElementById('tanggal-kurangi').value;
+
+    if (!nama || isNaN(donasi) || donasi <= 0 || !tanggal) {
+      alert('Harap masukkan data dengan benar!');
+      return;
+    }
+
+    const namaKey = convertToValidKey(nama);
+    const donasiRef = database.ref('donasi/' + namaKey);
+
+    const snapshot = await donasiRef.once('value');
+    const currentDonasi = snapshot.val()?.donasi || 0;
+
+    if (donasi > currentDonasi) {
+      alert('Jumlah pengurangan melebihi saldo donasi!');
+      return;
+    }
+
+    await donasiRef.update({
+      nama,
+      donasi: currentDonasi - donasi,
+      tanggalDonasi: tanggal
+    });
+
+    const riwayatRef = database.ref('riwayat').push();
+    await riwayatRef.set({
+      nama,
+      donasi: -donasi,
+      tanggal,
+      waktu: new Date(tanggal).toLocaleString('id-ID', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      tipe: 'kurang',
+      timestamp: -new Date(tanggal).getTime()
+    });
+
+    document.getElementById('notif-kurangi').classList.remove('hidden');
+    document.getElementById('kurangi-donasi-form').reset();
+  }
+  async function buatRekap() {
+  const tanggalMulai = document.getElementById('tanggal-mulai').value;
+  const tanggalAkhir = document.getElementById('tanggal-akhir').value;
+  const keterangan = document.getElementById('keterangan').value;
+
+  if (!tanggalMulai || !tanggalAkhir || !keterangan) {
+    alert('Harap lengkapi semua data, termasuk keterangan!');
+    return;
+  }
+
+  if (new Date(tanggalAkhir) < new Date(tanggalMulai)) {
+    alert('Tanggal akhir tidak boleh lebih awal dari tanggal mulai!');
+    return;
+  }
+
+  try {
+    const timestampMulai = new Date(tanggalMulai).getTime();
+    const timestampAkhir = new Date(tanggalAkhir).getTime() + 86400000; // Tambahkan satu hari untuk mencakup seluruh hari akhir
+
+    const riwayatSnapshot = await database.ref('riwayat')
+      .orderByChild('timestamp')
+      .startAt(-timestampAkhir)
+      .endAt(-timestampMulai)
+      .once('value');
+
+    const riwayatData = riwayatSnapshot.val();
+
+    if (!riwayatData) {
+      alert('Tidak ada transaksi dalam rentang waktu yang dipilih!');
+      return;
+    }
+
+    const donasiSnapshot = await database.ref('donasi').once('value');
+    const donasiData = donasiSnapshot.val();
+    let totalKasKeseluruhan = 0;
+
+    if (donasiData) {
+      Object.values(donasiData).forEach(donasi => {
+        totalKasKeseluruhan += donasi.donasi;
+      });
+    }
+
+    let totalMasuk = 0;
+    let totalKeluar = 0;
+    const detailMasuk = [];
+    const detailKeluar = [];
+    const detailAnggota = {};
+
+    // Menyimpan semua transaksi anggota dalam periode
+    Object.values(riwayatData).forEach(transaksi => {
+      if (transaksi.tipe === 'tambah') {
+        totalMasuk += transaksi.donasi;
+        detailMasuk.push(transaksi);
+      } else if (transaksi.tipe === 'kurang') {
+        totalKeluar += Math.abs(transaksi.donasi);
+        detailKeluar.push(transaksi);
+      }
+
+      // Simpan transaksi per anggota
+      if (!detailAnggota[transaksi.nama]) {
+        detailAnggota[transaksi.nama] = [];
+      }
+      detailAnggota[transaksi.nama].push({
+        donasi: transaksi.donasi,
+        tipe: transaksi.tipe,
+        tanggal: transaksi.tanggal,
+        waktu: transaksi.waktu
+      });
+    });
+
+    const rekapRef = database.ref('rekap').push();
+    await rekapRef.set({
+      tanggal_mulai: tanggalMulai,
+      tanggal_akhir: tanggalAkhir,
+      keterangan: keterangan,
+      total_masuk: totalMasuk,
+      total_keluar: totalKeluar,
+      total_kas: totalKasKeseluruhan,
+      detail_transaksi: {
+        masuk: detailMasuk,
+        keluar: detailKeluar
+      },
+      detail_anggota: detailAnggota,
+      timestamp: -Date.now(),
+      created_at: new Date().toLocaleString('id-ID', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      })
+    });
+
+    document.getElementById('notif-rekap').classList.remove('hidden');
+    document.getElementById('rekap-form').reset();
+  } catch (error) {
+    console.error('Gagal membuat rekap:', error);
+    alert('Terjadi kesalahan saat membuat rekap. Silakan coba lagi.');
+  }
+}
+
+    document.addEventListener('DOMContentLoaded', loadNama);
+  </script>
+</body>
+</html>
